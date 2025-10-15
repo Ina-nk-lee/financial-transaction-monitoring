@@ -36,23 +36,21 @@ Cross-border replication blocked; only aggregates shared to HQ.
 
 ```mermaid
 flowchart LR
-  A["Regional Processors"] --> B["S3 Regional Buckets"]
-  B --> C["Glue Crawler to Data Catalog"]
-  C --> D["Athena Transform Queries"]
-  D --> E["S3 Aggregate Store"]
-  E --> F["Lambda Notifier to Regulator API"]
-  E --> G["CloudWatch Metrics and Logs"]
+A[Regional Processors] --> B[(S3 Regional Buckets)]
+B --> C[Glue Crawler → Data Catalog]
+C --> D[Athena Transform Queries]
+D --> E[(S3 Aggregate Store)]
+E --> F[Lambda Notifier → Regulator API]
+E --> G[(CloudWatch Metrics + Logs)]
 
-  subgraph Guardrails
-    H["Encryption at Rest (KMS)"]
-    I["Replication Off"]
-    J["TTL <= 90 days (raw), 180 days (agg)"]
-    K["Audit Role Logging"]
-  end
+subgraph Guardrails
+H[Encryption @Rest (KMS)]
+I[Replication Off]
+J[TTL ≤ 90 days (raw), 180 days (agg)]
+K[Audit Role Logging]
+end
 
-  %% connect to nodes inside the subgraph (not to the subgraph label)
-  G -. audit .-> H
-  G -. alerts .-> K
+G -.-> Guardrails
 ```
 
 **Throughput Feasibility Calculation**  
@@ -62,9 +60,13 @@ so 2 TB fits comfortably within the 6 h SLA even with 2× retries.
 
 **Trade-offs**
 
-- Glue simpler than EMR for ≤ 2 TB batches.
-- Athena pay-per-query predictable vs Redshift hourly costs.
-- Short TTL reduces risk but requires regulators to download early.
+| Decision Point               | Option A                                      | Option B                               | Chosen            | Rationale / Trade-off                                                                                                                                        |
+| ---------------------------- | --------------------------------------------- | -------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Batch Compute**            | **AWS Glue** (serverless ETL)                 | **Amazon EMR** (managed Spark cluster) | ✅ Glue           | Glue auto-scales for short nightly jobs ≤ 2 TB, reducing ops overhead. EMR gives more control but costs ≈ 2× more and requires cluster lifecycle management. |
+| **Query Engine / Transform** | **Athena** (pay-per-query)                    | **Redshift** (provisioned warehouse)   | ✅ Athena         | The workload runs once nightly, so Athena’s on-demand billing avoids idle compute costs. Redshift is only justified for > 10 TB continuous workloads.        |
+| **Storage Tier**             | **S3 Standard + Lifecycle → Glacier**         | —                                      | ✅ S3 Lifecycle   | Raw logs need low-latency access for 6 h; older data automatically moves to Glacier, cutting storage cost ≈ 40 %.                                            |
+| **Orchestration**            | **Step Functions** (serverless state machine) | **Airflow on ECS**                     | ✅ Step Functions | Simpler to maintain; built-in retries + kill hooks. Airflow adds infra cost and complexity for a once-per-day job.                                           |
+| **Monitoring & Alerts**      | **CloudWatch + SNS**                          | Third-party (Datadog, New Relic)       | ✅ CloudWatch     | Native AWS integration and zero extra cost; sufficient for p95 SLA + cost alarms. External tools add ≈ $50 / mo.                                             |
 
 ---
 
@@ -148,3 +150,9 @@ Red-bar pytest files in `/tests/ethics/`; ledger links owners + actions.
 | R1  | Over-retention         | Privacy breach   | Data Platform | 🔴     |
 | R2  | Consent missing        | Legal risk       | Pipeline Eng  | 🔴     |
 | R3  | Merchant logs unmasked | Competitive harm | Obs Team      | 🟡     |
+
+## 10. Ethical Operations Badge (+5%)
+
+This submission includes one red-bar → green-bar transition:  
+**India — DPDP Act §7 (Consent & Lawful Purpose)** protecting unbanked / opt-out users.  
+The full CI output, diff, and updated ledger are available in Ethical_Operations_Bonus.md.
