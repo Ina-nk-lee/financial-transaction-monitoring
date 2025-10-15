@@ -150,3 +150,9 @@ Red-bar pytest files in `/tests/ethics/`; ledger links owners + actions.
 | R1  | Over-retention         | Privacy breach   | Data Platform | 🔴     |
 | R2  | Consent missing        | Legal risk       | Pipeline Eng  | 🔴     |
 | R3  | Merchant logs unmasked | Competitive harm | Obs Team      | 🟡     |
+
+## 10. Ethical Operations Badge (+5%)
+
+This submission includes one red-bar → green-bar transition:  
+**India — DPDP Act §7 (Consent & Lawful Purpose)** protecting unbanked / opt-out users.  
+The full CI output, diff, and updated ledger are available in Ethical_Operations_Bonus.md.
