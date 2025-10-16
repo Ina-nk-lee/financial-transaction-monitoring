@@ -36,21 +36,23 @@ Cross-border replication blocked; only aggregates shared to HQ.
 
 ```mermaid
 flowchart LR
-A[Regional Processors] --> B[(S3 Regional Buckets)]
-B --> C[Glue Crawler → Data Catalog]
-C --> D[Athena Transform Queries]
-D --> E[(S3 Aggregate Store)]
-E --> F[Lambda Notifier → Regulator API]
-E --> G[(CloudWatch Metrics + Logs)]
+  A["Regional Processors"] --> B["S3 Regional Buckets"]
+  B --> C["Glue Crawler to Data Catalog"]
+  C --> D["Athena Transform Queries"]
+  D --> E["S3 Aggregate Store"]
+  E --> F["Lambda Notifier to Regulator API"]
+  E --> G["CloudWatch Metrics and Logs"]
 
-subgraph Guardrails
-H[Encryption @Rest (KMS)]
-I[Replication Off]
-J[TTL ≤ 90 days (raw), 180 days (agg)]
-K[Audit Role Logging]
-end
+  subgraph Guardrails
+    H["Encryption at Rest (KMS)"]
+    I["Replication Off"]
+    J["TTL <= 90 days (raw), 180 days (agg)"]
+    K["Audit Role Logging"]
+  end
 
-G -.-> Guardrails
+  %% connect to nodes inside the subgraph (not to the subgraph label)
+  G -. audit .-> H
+  G -. alerts .-> K
 ```
 
 **Throughput Feasibility Calculation**  
